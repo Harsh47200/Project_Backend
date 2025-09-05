@@ -6,6 +6,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
+import org.bisag.jkcip.dto.request.RentRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
@@ -32,6 +33,66 @@ public class ContactService {
     private static final String SMS_API_URL = "https://www.fast2sms.com/dev/bulkV2";
     // Get free API key from fast2sms.com
     private static final String SMS_API_KEY = "ucdWxndxNbchiRLdByoMmhgy6321rVfXm2BbZVYua8ogGWrMrYVZcra5OEFY";
+
+     public boolean handleRentRequestEmails(RentRequest r) {
+        try {
+            // 1) Notify Admin
+            SimpleMailMessage adminMsg = new SimpleMailMessage();
+            adminMsg.setTo(TARGET_EMAIL);  // your inbox for rent requests
+            adminMsg.setFrom(fromEmail);
+            adminMsg.setSubject("🛠️ New Rent Request - " + r.getEquipmentType() + " (" + r.getRentTime() + ")");
+
+            String adminBody =
+                "NEW RENT REQUEST\n\n" +
+                "Time: " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss")) + "\n" +
+                "--------------------------------------------\n" +
+                "Name: " + r.getName() + "\n" +
+                "Email: " + r.getEmail() + "\n" +
+                "Mobile: " + r.getMobile() + "\n" +
+                "State: " + r.getState() + "\n" +
+                "District: " + r.getDistrict() + "\n" +
+                "Village/City: " + r.getVillage() + "\n" +
+                "Equipment: " + r.getEquipmentType() + "\n" +
+                "Duration: " + r.getRentTime() + "\n" +
+                "Quoted Rate (₹): " + (r.getRate() == null ? "N/A" : r.getRate()) + "\n" +
+                "--------------------------------------------\n" +
+                "ACTION: Contact customer immediately.";
+
+            adminMsg.setText(adminBody);
+            mailSender.send(adminMsg);
+
+            // 2) Confirmation to user
+            SimpleMailMessage userMsg = new SimpleMailMessage();
+            userMsg.setTo(r.getEmail());
+            userMsg.setFrom(fromEmail);
+            String refId = "RENT-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+            userMsg.setSubject("✅ Request Received (" + refId + ") - " + r.getEquipmentType());
+
+            String userBody =
+                "Hi " + (r.getName() == null ? "Customer" : r.getName()) + ",\n\n" +
+                "Thank you! Your rental request has been received and our team will contact you immediately.\n\n" +
+                "Reference ID: " + refId + "\n" +
+                "Submitted At: " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss")) + "\n\n" +
+                "Summary:\n" +
+                "• Equipment: " + r.getEquipmentType() + "\n" +
+                "• Duration: " + r.getRentTime() + "\n" +
+                "• Location: " + r.getVillage() + ", " + r.getDistrict() + ", " + r.getState() + "\n" +
+                "• Quoted Rate (₹): " + (r.getRate() == null ? "N/A" : r.getRate()) + "\n\n" +
+                "We’ll reach out on " + r.getMobile() + " shortly.\n\n" +
+                "Emergency? Call us: +91-7990178938\n" +
+                "Email: " + TARGET_EMAIL + "\n\n" +
+                "— Heavy Machinery Services";
+
+            userMsg.setText(userBody);
+            mailSender.send(userMsg);
+
+            return true;
+        } catch (Exception e) {
+            System.err.println("handleRentRequestEmails failed: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
+    }
 
         // public boolean sendServiceRequestSMS() {
         //     try {

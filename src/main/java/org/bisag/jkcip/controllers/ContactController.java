@@ -3,6 +3,7 @@ package org.bisag.jkcip.controllers;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.bisag.jkcip.dto.request.RentRequest;
 import org.bisag.jkcip.services.ContactService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -124,5 +125,51 @@ public ResponseEntity<Map<String, String>> sendEmergencyEmail(@RequestBody Map<S
 private boolean isValidEmail(String email) {
     return email != null && email.matches("^[A-Za-z0-9+_.-]+@(.+)$");
 }
+
+
+ @PostMapping("/rent-request")
+    public ResponseEntity<Map<String, String>> submitRentRequest(@RequestBody RentRequest rentRequest) {
+        Map<String, String> response = new HashMap<>();
+        try {
+            // Basic validation
+            if (rentRequest.getName() == null || rentRequest.getName().trim().isEmpty()
+                || rentRequest.getEmail() == null || rentRequest.getEmail().trim().isEmpty()
+                || rentRequest.getMobile() == null || rentRequest.getMobile().trim().isEmpty()
+                || rentRequest.getState() == null || rentRequest.getState().trim().isEmpty()
+                || rentRequest.getDistrict() == null || rentRequest.getDistrict().trim().isEmpty()
+                || rentRequest.getVillage() == null || rentRequest.getVillage().trim().isEmpty()
+                || rentRequest.getRentTime() == null || rentRequest.getRentTime().trim().isEmpty()
+                || rentRequest.getEquipmentType() == null || rentRequest.getEquipmentType().trim().isEmpty()) {
+                response.put("status", "error");
+                response.put("message", "All fields are required");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            // Email format check
+            if (!rentRequest.getEmail().matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
+                response.put("status", "error");
+                response.put("message", "Invalid email format");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            boolean sent = contactService.handleRentRequestEmails(rentRequest);
+
+            if (sent) {
+                response.put("status", "success");
+                response.put("message", "Your request has been submitted successfully! We will contact you immediately.");
+                return ResponseEntity.ok(response);
+            } else {
+                response.put("status", "error");
+                response.put("message", "Failed to send emails. Please try again later.");
+                return ResponseEntity.status(500).body(response);
+            }
+        } catch (Exception e) {
+            System.err.println("submitRentRequest error: " + e.getMessage());
+            e.printStackTrace();
+            response.put("status", "error");
+            response.put("message", "Server error: " + e.getMessage());
+            return ResponseEntity.status(500).body(response);
+        }
+    }
 
 }
