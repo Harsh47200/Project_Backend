@@ -8,6 +8,7 @@ import org.bisag.jkcip.services.ContactService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -22,6 +23,11 @@ public class ContactController {
 
     @Autowired
     private ContactService contactService;
+
+    @GetMapping("/home")
+    public ResponseEntity<String> home() {
+        return ResponseEntity.ok("Hello from ContactController!");
+    }
 
     @PostMapping("/service-request")
 public ResponseEntity<Map<String, String>> requestService() {
